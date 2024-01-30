@@ -1,6 +1,7 @@
-
 import os, shutil
 import cv2
+import numpy as np
+from matplotlib import pyplot as plt
 
 class EventFrameManager():
 
@@ -70,12 +71,23 @@ class EventFrameManager():
     def compute_frames_difference(self, prev_frame, next_frame):
         return cv2.absdiff(prev_frame, next_frame)
     
-    def create_event_frames(self, threshold_value = 15):
+    def create_event_frames(self):
         for currentframe in range(1, self.regular_frames_count):
-            frame1 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe - 1}.jpg')
-            frame2 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe}.jpg')
+            # frame1 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe - 1}.jpg')
+            # frame2 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe}.jpg')
+
+            frame1 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe - 1}.jpg', cv2.IMREAD_GRAYSCALE)
+            frame2 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe}.jpg', cv2.IMREAD_GRAYSCALE)
 
             frame_diff = self.compute_frames_difference(frame1, frame2)
-            _, event_frame = cv2.threshold(frame_diff, threshold_value, 255, cv2.THRESH_BINARY)
-            self.event_frames.append(event_frame)
+            _, event_frame = cv2.threshold(frame_diff, 0 , 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+            # self.event_frames.append(event_frame)
+            name = './raw_data/event_frames/frame_' + str(currentframe - 1) + '.jpg'
+            try:
+                cv2.imwrite(name, event_frame)
+            except:
+                print("Error while writing event frame to file")
+
+
+
 
