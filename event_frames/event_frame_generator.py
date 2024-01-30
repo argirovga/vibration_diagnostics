@@ -72,6 +72,20 @@ class EventFrameManager():
         return cv2.absdiff(prev_frame, next_frame)
     
     def create_event_frames(self):
+        if not os.path.exists('raw_data/event_frames'): 
+                os.makedirs('raw_data/event_frames')
+        else:
+            for filename in os.listdir('raw_data/event_frames'):
+                file_path = os.path.join('raw_data/event_frames', filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    print('Failed to delete %s. Reason: %s' % (file_path, e))
+            print("Data directory cleaned \n____________________________\n")
+        
         for currentframe in range(1, self.regular_frames_count):
             # frame1 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe - 1}.jpg')
             # frame2 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe}.jpg')
@@ -80,9 +94,21 @@ class EventFrameManager():
             frame2 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe}.jpg', cv2.IMREAD_GRAYSCALE)
 
             frame_diff = self.compute_frames_difference(frame1, frame2)
-            _, event_frame = cv2.threshold(frame_diff, 0 , 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+
+            # blur = cv2.GaussianBlur(frame_diff,(5,5),0)
+            # _, event_frame = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Gausian filtering => otsu optimization
+
+            
+            # _, event_frame = cv2.threshold(frame_diff, 0 , 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+            event_frame = cv2.adaptiveThreshold(frame_diff, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,5,10)
             # self.event_frames.append(event_frame)
-            name = './raw_data/event_frames/frame_' + str(currentframe - 1) + '.jpg'
+
+            
+            
+
+            name = 'raw_data/event_frames/frame_' + str(currentframe - 1) + '.jpg'
             try:
                 cv2.imwrite(name, event_frame)
             except:
