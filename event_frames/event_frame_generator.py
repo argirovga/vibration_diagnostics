@@ -70,7 +70,8 @@ class EventFrameManager():
 
     def compute_frames_difference(self, prev_frame, next_frame):
         return cv2.absdiff(prev_frame, next_frame)
-
+    
+    
     def automated_threshold_search(self, block_size_range, c_constant_range):
         """
         Search for optimal block size and C constant for adaptive thresholding.
@@ -129,7 +130,11 @@ class EventFrameManager():
                 except Exception as e:
                     print('Failed to delete %s. Reason: %s' % (file_path, e))
             print("Data directory cleaned \n____________________________\n")
+
+        '''
+        optimizing parameters for adaptive thresholding
         self.automated_threshold_search((3, 15, 2), (-10, 10, 2))
+        '''
 
         for currentframe in range(1, self.regular_frames_count):
             # frame1 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe - 1}.jpg')
@@ -139,15 +144,22 @@ class EventFrameManager():
             frame2 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe}.jpg', cv2.IMREAD_GRAYSCALE)
 
             frame_diff = self.compute_frames_difference(frame1, frame2)
-
-            # blur = cv2.GaussianBlur(frame_diff,(5,5),0)
-            # _, event_frame = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Gausian filtering => otsu optimization
-
-            # _, event_frame = cv2.threshold(frame_diff, 0 , 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-            # _, event_frame = cv2.threshold(frame_diff, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
+            
+            '''
+            This sample uses Gaussian filtering and the otsu optimization
+            blur = cv2.GaussianBlur(frame_diff,(5,5),0)
+            _, event_frame = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Gausian filtering => otsu optimization
+            '''
+            '''
+            simple otsu optimization
+            _, event_frame = cv2.threshold(frame_diff, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            '''
+            
+            '''
+            adaptive thresholding using optimized parameters
             event_frame = cv2.adaptiveThreshold(frame_diff, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
                                                 self.best_block_size, self.best_c_constant)
+            '''
             # self.event_frames.append(event_frame)
 
             name = 'raw_data/event_frames/frame_' + str(currentframe - 1) + '.jpg'
