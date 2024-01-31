@@ -5,11 +5,11 @@ from matplotlib import pyplot as plt
 
 
 class EventFrameManager():
-
     def __init__(self, _file_path: str) -> None:
         self.file_path = _file_path
         self.regular_frames_count = 0
-        self.event_frames = []
+        self.event_frames_count = 0
+        self.event_frames = np.array([])
         self.best_c_constant = None
         self.best_block_size = None
 
@@ -135,7 +135,6 @@ class EventFrameManager():
         optimizing parameters for adaptive thresholding
         self.automated_threshold_search((3, 15, 2), (-10, 10, 2))
         '''
-
         for currentframe in range(1, self.regular_frames_count):
             # frame1 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe - 1}.jpg')
             # frame2 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe}.jpg')
@@ -160,10 +159,16 @@ class EventFrameManager():
             event_frame = cv2.adaptiveThreshold(frame_diff, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
                                                 self.best_block_size, self.best_c_constant)
             '''
-            # self.event_frames.append(event_frame)
 
-            name = 'raw_data/event_frames/frame_' + str(currentframe - 1) + '.jpg'
+            # Normalize the frame difference to span the full range of grayscale
+            event_frame = cv2.normalize(frame_diff, None, 0, 255, cv2.NORM_MINMAX)
+
+            np.append(self.event_frames, event_frame)
+
+            name = 'raw_data/event_frames/event_frame_' + str(currentframe - 1) + '.jpg'
             try:
                 cv2.imwrite(name, event_frame)
             except:
                 print("Error while writing event frame to file")
+        print(f'{self.regular_frames_count} event frames created in \"raw_data/event_frames\" directory \n')
+        self.event_frames_count = self.regular_frames_count
