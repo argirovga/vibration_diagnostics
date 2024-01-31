@@ -91,14 +91,6 @@ class EventFrameManager():
                 # Cumulative score for the current combination of parameters
                 cumulative_score = 0
 
-                # for path in self:
-                #     # Read image in grayscale
-                #     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-                #
-                #     # Apply adaptive threshold
-                #     thresh_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                #                                        cv2.THRESH_BINARY, block_size, c_constant)
-
                 for currentframe in range(1, self.regular_frames_count):
                     frame1 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe - 1}.jpg',
                                         cv2.IMREAD_GRAYSCALE)
@@ -110,7 +102,6 @@ class EventFrameManager():
 
                     # Calculate the score for this thresholded image
                     # For simplicity, let's use the number of white pixels as a score
-                    # This can be replaced with any other criterion relevant to your application
                     score = np.sum(thresh_img == 255)
                     cumulative_score += score
 
