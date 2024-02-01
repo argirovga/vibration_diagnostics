@@ -163,12 +163,12 @@ class EventFrameManager():
             event_frame = cv2.normalize(frame_diff, None, 0, 255, cv2.NORM_MINMAX)
 
             self.event_frames.append(event_frame)
-            self.event_frames = np.array(self.event_frames)
 
             name = 'raw_data/event_frames/event_frame_' + str(currentframe - 1) + '.jpg'
             try:
                 cv2.imwrite(name, event_frame)
             except:
                 print("Error while writing event frame to file")
+        self.event_frames = np.array(self.event_frames)
         print(f'{self.regular_frames_count} event frames created in \"raw_data/event_frames\" directory \n')
         self.event_frames_count = self.regular_frames_count
