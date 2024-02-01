@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from scipy import signal
 from deap import base, creator, tools, algorithms
 
@@ -12,6 +13,9 @@ class EventFilter:
         EF_manager.extract_frames()
         EF_manager.convert_to_grayscale()
         EF_manager.create_event_frames()
-
+        self.K = random.randint(0,255)
+        self.a = np.ones(self.K)
+        self.b = np.ones(self.K)
+        
     
 
