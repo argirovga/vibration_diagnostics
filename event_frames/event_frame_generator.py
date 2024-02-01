@@ -9,7 +9,7 @@ class EventFrameManager():
         self.file_path = _file_path
         self.regular_frames_count = 0
         self.event_frames_count = 0
-        self.event_frames = np.array([])
+        self.event_frames = []
         self.best_c_constant = None
         self.best_block_size = None
 
@@ -38,7 +38,7 @@ class EventFrameManager():
             frames_left_flag, frame = cam.read()
 
             if frames_left_flag:
-                name = './raw_data/raw_frames/frame_' + str(currentframe) + '.jpg'
+                name = 'raw_data/raw_frames/frame_' + str(currentframe) + '.jpg'
                 cv2.imwrite(name, frame)
 
                 currentframe += 1
@@ -70,8 +70,7 @@ class EventFrameManager():
 
     def compute_frames_difference(self, prev_frame, next_frame):
         return cv2.absdiff(prev_frame, next_frame)
-    
-    
+
     def automated_threshold_search(self, block_size_range, c_constant_range):
         """
         Search for optimal block size and C constant for adaptive thresholding.
@@ -163,7 +162,8 @@ class EventFrameManager():
             # Normalize the frame difference to span the full range of grayscale
             event_frame = cv2.normalize(frame_diff, None, 0, 255, cv2.NORM_MINMAX)
 
-            np.append(self.event_frames, event_frame)
+            self.event_frames.append(event_frame)
+            self.event_frames = np.array(self.event_frames)
 
             name = 'raw_data/event_frames/event_frame_' + str(currentframe - 1) + '.jpg'
             try:
