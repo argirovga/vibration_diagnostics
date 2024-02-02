@@ -7,16 +7,11 @@ import numpy as np
 from event_filter.event_filter_generator import EventFilter
 from event_frames.event_frame_generator import EventFrameManager
 
+
 EF_manager = EventFrameManager("raw_data/high_speed_cam_videos/MotorAmplif_motion_evm_2022-12-23-10-50-19.mp4")
-EF_manager.extract_frames()
-EF_manager.convert_to_grayscale()
-EF_manager.create_event_frames()
 
-np.seterr(divide='ignore', invalid='ignore')
 EF = EventFilter(EF_manager)
-EF.iteration()
-
-print(len(EF.ef_frames))
+EF.generate_filtered_ef_frames()
 
 if not os.path.exists('raw_data/event_frames_filtered'):
     os.makedirs('raw_data/event_frames_filtered')
@@ -32,10 +27,7 @@ else:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
     print("Data directory cleaned \n____________________________\n")
 
-'''
-optimizing parameters for adaptive thresholding
-self.automated_threshold_search((3, 15, 2), (-10, 10, 2))
-'''
+
 for currentframe in range(0, len(EF.ef_frames)):
     magnitude = np.abs(EF.ef_frames[currentframe])
 
@@ -44,3 +36,5 @@ for currentframe in range(0, len(EF.ef_frames)):
     name = 'raw_data/event_frames_filtered/ev_fram_filt' + str(currentframe) + '.jpg'
     cv2.imwrite(name, image)
 
+# for frame in EF.ef_frames:
+#     print(frame)

@@ -12,6 +12,9 @@ class EventFrameManager():
         self.event_frames = []
         self.best_c_constant = None
         self.best_block_size = None
+        self.extract_frames()
+        self.convert_to_grayscale()
+        self.create_event_frames()
 
     def extract_frames(self):
         cam = cv2.VideoCapture(self.file_path)
