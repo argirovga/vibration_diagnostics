@@ -76,6 +76,8 @@ class EventFrameManager():
 
     def automated_threshold_search(self, block_size_range, c_constant_range):
         """
+        NOT USED BY NOW
+        
         Search for optimal block size and C constant for adaptive thresholding.
         image_paths: List of paths to images to be used for thresholding.
         block_size_range: Tuple (min, max, step) for block size.
@@ -133,14 +135,7 @@ class EventFrameManager():
                     print('Failed to delete %s. Reason: %s' % (file_path, e))
             print("Data directory cleaned \n____________________________\n")
 
-        '''
-        optimizing parameters for adaptive thresholding
-        self.automated_threshold_search((3, 15, 2), (-10, 10, 2))
-        '''
         for currentframe in range(1, self.regular_frames_count):
-            # frame1 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe - 1}.jpg')
-            # frame2 = cv2.imread('raw_data/raw_frames'+ f'/gray_frame_{currentframe}.jpg')
-
             frame1 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe - 1}.jpg', cv2.IMREAD_GRAYSCALE)
             frame2 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe}.jpg', cv2.IMREAD_GRAYSCALE)
 

@@ -1,40 +1,32 @@
-import os
-import shutil
+from event_frames.event_frame_generator import EventFrameManager
+from event_filter.event_filter_generator import EventFilter
+from event_filter.genetic_algorithm import GeneticAlgorithmCreator
 
-import cv2
 import numpy as np
 
-from event_filter.event_filter_generator import EventFilter
-from event_frames.event_frame_generator import EventFrameManager
+# Define the file path for the video
+file_path = "raw_data/high_speed_cam_videos/MotorAmplif_motion_evm_2022-12-23-10-50-19.mp4"
 
+# Initialize the EventFrameManager to extract frames from the video
+EF_manager = EventFrameManager(file_path)
 
-EF_manager = EventFrameManager("raw_data/high_speed_cam_videos/MotorAmplif_motion_evm_2022-12-23-10-50-19.mp4")
-
-EF = EventFilter(EF_manager)
+# Create an instance of EventFilter to generate filtered event frames
+filter_order = 1  # Example filter order, adjust as needed
+b_coefficients = np.array([0.05, 0.05])  # Example feedforward coefficients, adjust as needed
+a_coefficients = np.array([0.05, 0.05])  # Example feedback coefficients, adjust as needed
+EF = EventFilter(EF_manager, filter_order, b_coefficients, a_coefficients)
 EF.generate_filtered_ef_frames()
 
-if not os.path.exists('raw_data/event_frames_filtered'):
-    os.makedirs('raw_data/event_frames_filtered')
-else:
-    for filename in os.listdir('raw_data/event_frames_filtered'):
-        file_path = os.path.join('raw_data/event_frames_filtered', filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
-    print("Data directory cleaned \n____________________________\n")
+# Create an instance of GeneticAlgorithmCreator to optimize the EF coefficients
+num_generations = 60
+num_parents_mating = 4
+sol_per_pop = 8
+init_range_low = -2
+init_range_high = 5
+mutation_percent_genes = 50
+GA_creator = GeneticAlgorithmCreator(EF_manager, filter_order, num_generations, num_parents_mating, sol_per_pop,
+                                     init_range_low, init_range_high, mutation_percent_genes)
+optimized_coefficients = GA_creator.create_run_instance('preped_data/filtered_event_frames')
 
-
-for currentframe in range(0, len(EF.ef_frames)):
-    magnitude = np.abs(EF.ef_frames[currentframe])
-
-    # Convert to uint8
-    image = np.uint8(magnitude)
-    name = 'raw_data/event_frames_filtered/ev_fram_filt' + str(currentframe) + '.jpg'
-    cv2.imwrite(name, image)
-
-# for frame in EF.ef_frames:
-#     print(frame)
+# Additional steps can be added here, such as evaluating the performance of the optimized EF
+# or further processing the filtered event frames.
