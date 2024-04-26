@@ -19,7 +19,7 @@ class GeneticAlgorithmCreator:
         ef = EventFilter(self.ef_manager, self.filter_order, solution[:self.filter_order+1], solution[self.filter_order+1:])
         ef.generate_filtered_ef_frames()
         
-        peak_intensities_sum = np.sum([np.max(frame) for frame in ef.filtered_ef_frames])
+        peak_intensities_sum = np.sum([np.max(frame) for frame in ef.filtered_event_frames])
 
         # Check for division by zero
         if peak_intensities_sum == 0:
@@ -31,7 +31,7 @@ class GeneticAlgorithmCreator:
 
 
     def create_run_instance(self, output_dir: str = None):
-        num_genes = 2 * (self.filter_order + 1)
+        num_genes = 2 * self.filter_order + 1
         ga_instance = pygad.GA(num_generations=self.num_generations,
                                num_parents_mating=self.num_parents_mating,
                                fitness_func=self.fitness_function,

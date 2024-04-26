@@ -10,28 +10,28 @@ class EventFilter:
         self.filter_order = filter_order
         self.b_coefficients = b_coefficients
         self.a_coefficients = a_coefficients
-
-    def apply_iir_filter(self, frame_t: np.ndarray, prev_output: np.ndarray) -> np.ndarray:
-        filtered_output = np.zeros_like(frame_t, dtype=np.float64)
-
-        for n in range(self.filter_order + 1):
-            if n == 0:
-                filtered_output += self.b_coefficients[n] * frame_t
-            else:
-                filtered_output -= self.a_coefficients[n] * prev_output
-
-        return filtered_output
+        self.filtered_event_frames = np.zeros_like(self.ef_manager.event_frames)
 
     def generate_filtered_ef_frames(self, save_frames: bool = False, output_dir: str = None) -> None:
         print("Filtering try")
 
-        prev_output = np.zeros_like(self.ef_manager.event_frames[0], dtype=np.float64)
+        self.filtered_event_frames = np.zeros_like(self.ef_manager.event_frames)
 
-        self.filtered_ef_frames = []
-        for frame_t in self.ef_manager.event_frames:
-            filtered_frame = self.apply_iir_filter(frame_t.astype(np.float64), prev_output)
-            self.filtered_ef_frames.append(filtered_frame)
-            prev_output = filtered_frame
+        for ind in range(self.ef_manager.event_frames_count - 1):
+            new_frame = np.zeros_like(self.ef_manager.event_frames[ind], dtype=np.float64)
+            
+            # B sum
+            for n in range(self.filter_order + 1):
+                if ind - n < 0: break
+                else:
+                    new_frame += self.b_coefficients[n] * self.ef_manager.event_frames[ind - n]
+            
+            # A sum
+            for m in range(1, self.filter_order + 1):
+                if ind - m < 0: break
+                else:
+                    new_frame -= self.a_coefficients[m - 1] * self.ef_manager.event_frames[ind - m]
+            self.filtered_event_frames[ind] = new_frame
 
         print("Filtering try completed")
 
@@ -51,9 +51,12 @@ class EventFilter:
                         print('Failed to delete %s. Reason: %s' % (file_path, e))
                 print("Data directory cleaned \n____________________________\n")
 
-            for idx, frame in enumerate(self.filtered_ef_frames):
+            for idx, frame in enumerate(self.filtered_event_frames):
                 name = os.path.join(output_dir, f'filtered_frame_{idx}.jpg')
                 try:
+                    temp_increase = np.empty_like(frame)
+                    temp_increase.fill(20)
+                    frame += temp_increase
                     cv2.imwrite(name, frame)
                 except:
                     print("Error while writing filtered event frame to file")
