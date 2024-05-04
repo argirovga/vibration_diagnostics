@@ -16,7 +16,7 @@ class PatternMatching:
         # Using The Hahn window to reduce spectral artifacts (spectrum leakage) that occur when analyzing signals using
         # the Fourier transform method. It smoothes out discontinuities at the edges of the sample so that spectral analysis
         # (e.g. frequency transform) is more accurate and not distorted by unwanted frequency components.
-        # Also perfoming FFT on the frames
+        # Also, performing FFT on the frames
         F1 = fft2(f1 * np.hanning(f1.shape[0])[:, None] * np.hanning(f1.shape[1])[None, :])
         F2 = fft2(f2 * np.hanning(f2.shape[0])[:, None] * np.hanning(f2.shape[1])[None, :])
 
