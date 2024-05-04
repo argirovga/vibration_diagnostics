@@ -2,57 +2,84 @@ import numpy as np
 from scipy.fft import fft2, ifft2, fftshift
 import cv2
 import os
+import matplotlib.pyplot as plt
+import time
+from concurrent.futures import ThreadPoolExecutor
 
-class PatternMatching():
-    def __init__(self, _frames: list) -> None:
-        self.frames = _frames
-        self.shifts = []
-        self.pattern_matching_on_frames()
+
+class PatternMatching:
+    def __init__(self, directory_path):
+        self.directory_path = directory_path
+        self.frames = self.load_frames_from_directory()
 
     def phase_correlation(self, f1, f2):
         # Apply Fourier Transform to both frames
         F1 = fft2(f1)
         F2 = fft2(f2)
+
         # Compute the cross-power spectrum
         R = F1 * np.conj(F2)
-        R /= np.abs(R)
+        R /= np.abs(R) if np.any(R) else 1
+
         # Apply inverse Fourier Transform
         shifted = fftshift(ifft2(R))
-        # Find the peak location, indicating the shift
-        # Здесь просто находим максимальное значение в массиве и его индекс (координаты) - это и есть сдвиг
-        # np.argmax() - возвращает индекс максимального значения в массиве
-        # np.unravel_index() - преобразует индекс в координаты
-        shift_y, shift_x = np.unravel_index(np.argmax(np.abs(shifted)), shifted.shape)
-        return shift_x, shift_y
 
-    def pattern_matching_on_frames(self):
-        for i in range(len(self.frames) - 1):
-            shift = self.phase_correlation(self.frames[i], self.frames[i + 1])
-            self.shifts.append(shift)
+        # Вычисляем абсолютные значения
+        abs_shifted = np.abs(shifted)
 
-    def get_shifts(self):
-        # Вывод формата первый кадр - второй кадр: сдвиг по x, сдвиг по y(т.е. насколько надо сдвинуть первый кадр, чтобы он совпал с вторым по осям)
-        return self.shifts
+        # Создаем индексы для каждой оси
+        rows, cols = np.indices(abs_shifted.shape)
 
-    @staticmethod
-    def load_frames_from_directory(directory_path):
+        # Вычисляем взвешенные средние (центр масс)
+        mean_x = np.sum(cols * abs_shifted) / np.sum(abs_shifted)
+        mean_y = np.sum(rows * abs_shifted) / np.sum(abs_shifted)
+
+        mean_y, mean_x = int(round(mean_y)), int(round(mean_x))
+
+        return mean_x, mean_y
+
+    def load_frames_from_directory(self):
         frames = []
-        for filename in os.listdir(directory_path):
-            file_path = os.path.join(directory_path, filename)
-            frame = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
-            frames.append(frame)
+        for frame_name in sorted(os.listdir(self.directory_path)):
+            frame_path = os.path.join(self.directory_path, frame_name)
+            frame = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
+            if frame is not None:
+                frames.append(frame)
         return frames
 
-    @staticmethod
-    def start():
-        frames_directory = "C:\\Users\\1\\Desktop\\pythonProject\\vibration_diagnostics_copy\\raw_data\\event_frames_filtered"
-        frames = PatternMatching.load_frames_from_directory(frames_directory)
-        shifts = PatternMatching.pattern_matching_on_frames(frames)
-        # Вывод формата первый кадр - второй кадр: сдвиг по x, сдвиг по y(т.е. насколько надо сдвинуть первый кадр, чтобы он совпал с вторым по осям)
-        for i, shift in enumerate(shifts):
-            print(
-                f"to align the {i} frame with the {i + 1} frame, we need to move {i} frame: shift x = {shift[0]}, shift y = {shift[1]}")
+    def compute_shift(self, frame_pair):
+        return self.phase_correlation(frame_pair[0], frame_pair[1])
+
+    def pattern_matching_on_frames(self):
+        timings = []
+        shifts = []
+        # Use ThreadPoolExecutor to parallelize the computation
+        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+            future_shifts = [executor.submit(self.compute_shift, (self.frames[i], self.frames[i + 1]))
+                             for i in range(len(self.frames) - 1)]
+            for future in future_shifts:
+                start_time = time.time()
+                shift = future.result()
+                shifts.append(shift)
+                end_time = time.time()
+                timings.append(end_time - start_time)
+        return shifts, timings
+
 
 if __name__ == "__main__":
-    PatternMatching.start()
-
+    start_time_script = time.time()  # Записываем время начала работы скрипта
+    frames_directory = "C:\\Users\\1\\Desktop\\pythonProject\\vibration_diagnostics_copy\\raw_data\\event_frames_filtered"
+    analyzer = PatternMatching(frames_directory)
+    shifts, timings = analyzer.pattern_matching_on_frames()
+    plt.plot(timings, marker='o')
+    plt.title('Time Taken for Each Phase Correlation Calculation')
+    plt.xlabel('Frame Pair Index')
+    plt.ylabel('Time (seconds)')
+    plt.grid(True)
+    plt.show()
+    end_time_script = time.time()  # Записываем время окончания работы скрипта
+    total_time_script = end_time_script - start_time_script
+    print(f"Total script execution time: {total_time_script} seconds")
+    for i, shift in enumerate(shifts):
+        print(
+            f"to align the {i} frame with the {i + 1} frame, we need to move {i} frame: shift x = {shift[0]}, shift y = {shift[1]}")
