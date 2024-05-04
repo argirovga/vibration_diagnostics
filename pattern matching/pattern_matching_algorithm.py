@@ -24,13 +24,13 @@ class PatternMatching:
         # Apply inverse Fourier Transform
         shifted = fftshift(ifft2(R))
 
-        # Вычисляем абсолютные значения
+        # Calculate absolute values
         abs_shifted = np.abs(shifted)
 
-        # Создаем индексы для каждой оси
+        # Create indexes for each axis
         rows, cols = np.indices(abs_shifted.shape)
 
-        # Вычисляем взвешенные средние (центр масс)
+        # Calculate weighted averages (center of mass)
         mean_x = np.sum(cols * abs_shifted) / np.sum(abs_shifted)
         mean_y = np.sum(rows * abs_shifted) / np.sum(abs_shifted)
 
@@ -53,7 +53,7 @@ class PatternMatching:
     def pattern_matching_on_frames(self):
         timings = []
         shifts = []
-        # Use ThreadPoolExecutor to parallelize the computation
+        # Using ThreadPoolExecutor to parallelize the computation
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
             future_shifts = [executor.submit(self.compute_shift, (self.frames[i], self.frames[i + 1]))
                              for i in range(len(self.frames) - 1)]
@@ -67,7 +67,7 @@ class PatternMatching:
 
 
 if __name__ == "__main__":
-    start_time_script = time.time()  # Записываем время начала работы скрипта
+    start_time_script = time.time()  # Record the start time of the script
     frames_directory = "C:\\Users\\1\\Desktop\\pythonProject\\vibration_diagnostics_copy\\raw_data\\event_frames_filtered"
     analyzer = PatternMatching(frames_directory)
     shifts, timings = analyzer.pattern_matching_on_frames()
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     plt.ylabel('Time (seconds)')
     plt.grid(True)
     plt.show()
-    end_time_script = time.time()  # Записываем время окончания работы скрипта
+    end_time_script = time.time()  # Record the end time of the script
     total_time_script = end_time_script - start_time_script
     print(f"Total script execution time: {total_time_script} seconds")
     for i, shift in enumerate(shifts):
