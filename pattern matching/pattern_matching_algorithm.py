@@ -13,9 +13,13 @@ class PatternMatching:
         self.frames = self.load_frames_from_directory()
 
     def phase_correlation(self, f1, f2):
-        # Apply Fourier Transform to both frames
-        F1 = fft2(f1)
-        F2 = fft2(f2)
+        # Using The Hahn window to reduce spectral artifacts (spectrum leakage) that occur when analyzing signals using
+        # the Fourier transform method. It smoothes out discontinuities at the edges of the sample so that spectral analysis
+        # (e.g. frequency transform) is more accurate and not distorted by unwanted frequency components.
+        # Also perfoming FFT on the frames
+        F1 = fft2(f1 * np.hanning(f1.shape[0])[:, None] * np.hanning(f1.shape[1])[None, :])
+        F2 = fft2(f2 * np.hanning(f2.shape[0])[:, None] * np.hanning(f2.shape[1])[None, :])
+
 
         # Compute the cross-power spectrum
         R = F1 * np.conj(F2)
@@ -39,12 +43,21 @@ class PatternMatching:
         return mean_x, mean_y
 
     def load_frames_from_directory(self):
-        frames = []
-        for frame_name in sorted(os.listdir(self.directory_path)):
+        def read_frame(frame_name):
             frame_path = os.path.join(self.directory_path, frame_name)
-            frame = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
-            if frame is not None:
-                frames.append(frame)
+            return cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
+
+        # Get all the file names in sorted order
+        frame_names = sorted(os.listdir(self.directory_path))
+
+        # Use ThreadPoolExecutor to read frames in parallel
+        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+            # Считываем все кадры параллельно и формируем список результатов
+            frames = list(executor.map(read_frame, frame_names))
+
+        # Remove frames that have not been successfully read (None)
+        frames = [frame for frame in frames if frame is not None]
+
         return frames
 
     def compute_shift(self, frame_pair):
@@ -80,6 +93,3 @@ if __name__ == "__main__":
     end_time_script = time.time()  # Record the end time of the script
     total_time_script = end_time_script - start_time_script
     print(f"Total script execution time: {total_time_script} seconds")
-    for i, shift in enumerate(shifts):
-        print(
-            f"to align the {i} frame with the {i + 1} frame, we need to move {i} frame: shift x = {shift[0]}, shift y = {shift[1]}")
