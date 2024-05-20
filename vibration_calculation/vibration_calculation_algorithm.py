@@ -11,7 +11,7 @@ class VibrationAnalyzer:
         self.frame_rate = self.get_frame_rate()
 
     def extract_shifts(self):
-        shifts, _ = self.analyzer.pattern_matching_on_frames()
+        shifts = self.analyzer.pattern_matching_on_frames()
         self.shifts_x = [s[0] for s in shifts]
         self.shifts_y = [s[1] for s in shifts]
         return self.shifts_x, self.shifts_y
