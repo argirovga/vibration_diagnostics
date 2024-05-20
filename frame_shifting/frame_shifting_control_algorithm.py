@@ -11,12 +11,8 @@ class FrameShiftAnalyzer:
         self.frames = self.load_frames_from_directory()
 
     def phase_correlation(self, f1, f2):
-        # Using The Hahn window to reduce spectral artifacts (spectrum leakage) that occur when analyzing signals using
-        # the Fourier transform method. It smoothes out discontinuities at the edges of the sample so that spectral analysis
-        # (e.g. frequency transform) is more accurate and not distorted by unwanted frequency components.
-        # Also, perfoming FFT on the frames
-        F1 = fft2(f1 * np.hanning(f1.shape[0])[:, None] * np.hanning(f1.shape[1])[None, :])
-        F2 = fft2(f2 * np.hanning(f2.shape[0])[:, None] * np.hanning(f2.shape[1])[None, :])
+        F1 = fft2(f1 * np.hamming(f1.shape[0])[:, None] * np.hamming(f1.shape[1])[None, :])
+        F2 = fft2(f2 * np.hamming(f2.shape[0])[:, None] * np.hamming(f2.shape[1])[None, :])
 
         # Compute the cross-power spectrum
         R = F1 * np.conj(F2)
@@ -44,7 +40,7 @@ class FrameShiftAnalyzer:
 
         # Use ThreadPoolExecutor to read frames in parallel
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-            # Считываем все кадры параллельно и формируем список результатов
+            # Read all frames in parallel and generate a list of results
             frames = list(executor.map(read_frame, frame_names))
 
         return frames
@@ -54,7 +50,7 @@ class FrameShiftAnalyzer:
 
     def pattern_matching_on_frames(self):
         shifts = []
-        # Использование ThreadPoolExecutor для параллелизации вычислений
+        # Using ThreadPoolExecutor to parallelize calculations
         with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
             future_shifts = [executor.submit(self.compute_shift, (self.frames[i], self.frames[i + 1]))
                              for i in range(len(self.frames) - 1)]
