@@ -21,7 +21,6 @@ class GeneticAlgorithmCreator:
         
         peak_intensities_sum = np.sum([np.max(frame) for frame in ef.filtered_event_frames])
 
-        # Check for division by zero
         if peak_intensities_sum == 0:
             return np.inf  # Return infinity to penalize zero-sum solutions
         

@@ -57,6 +57,7 @@ class EventFilter:
                     temp_increase = np.empty_like(frame)
                     temp_increase.fill(20)
                     frame += temp_increase
+                    
                     cv2.imwrite(name, frame)
                 except:
                     print("Error while writing filtered event frame to file")

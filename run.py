@@ -28,6 +28,4 @@ GA_creator = GeneticAlgorithmCreator(EF_manager, filter_order, num_generations, 
                                      init_range_low, init_range_high, mutation_percent_genes)
 optimized_coefficients = GA_creator.create_run_instance('preped_data/filtered_event_frames')
 
-# Additional steps can be added here, such as evaluating the performance of the optimized EF
-# or further processing the filtered event frames.
  

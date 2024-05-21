@@ -2,7 +2,7 @@ import os, shutil
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-
+import pywt
 
 class EventFrameManager():
     def __init__(self, _file_path: str) -> None:
@@ -53,6 +53,12 @@ class EventFrameManager():
         cam.release()
         cv2.destroyAllWindows()
 
+    def denoise_bilateral(self, frame): # the most efficient filter (statistics in the provided python notebook)
+        return cv2.bilateralFilter(frame, 9, 75, 75)
+    
+    def denoise_non_local_means(self, frame):
+        return cv2.fastNlMeansDenoising(frame, None, 30, 7, 21)
+
     def convert_to_grayscale(self):
         currentframe = 0
         for filename in os.listdir('raw_data/raw_frames'):
@@ -61,6 +67,7 @@ class EventFrameManager():
             frame = cv2.imread(file_path)
             os.unlink(file_path)
             gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray_image = self.denoise_bilateral(gray_image)
 
             name = 'raw_data/raw_frames/gray_frame_' + str(currentframe) + '.jpg'
             cv2.imwrite(name, gray_image)
@@ -74,51 +81,13 @@ class EventFrameManager():
     def compute_frames_difference(self, prev_frame, next_frame):
         return cv2.absdiff(prev_frame, next_frame)
 
-    def automated_threshold_search(self, block_size_range, c_constant_range):
-        """
-        NOT USED BY NOW
-        
-        Search for optimal block size and C constant for adaptive thresholding.
-        image_paths: List of paths to images to be used for thresholding.
-        block_size_range: Tuple (min, max, step) for block size.
-        c_constant_range: Tuple (min, max, step) for C constant.
-        """
+    def edge_aware_sharpen(image, sigma_s=5, sigma_r=0.1, strength=1.2):
+        base_layer = cv2.bilateralFilter(image, d=9, sigmaColor=sigma_r*255, sigmaSpace=sigma_s)
+        detail_layer = image - base_layer
+        enhanced_detail = detail_layer * strength
+        sharpened_image = base_layer + enhanced_detail
 
-        best_block_size = None
-        best_c_constant = None
-        best_score = float('inf')  # You can change the criteria based on your requirement
-
-        for block_size in range(*block_size_range):
-            if block_size % 2 == 0:  # Ensure block_size is odd
-                continue
-
-            for c_constant in range(*c_constant_range):
-                # Cumulative score for the current combination of parameters
-                cumulative_score = 0
-
-                for currentframe in range(1, self.regular_frames_count):
-                    frame1 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe - 1}.jpg',
-                                        cv2.IMREAD_GRAYSCALE)
-                    frame2 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe}.jpg', cv2.IMREAD_GRAYSCALE)
-
-                    frame_diff = self.compute_frames_difference(frame1, frame2)
-                    thresh_img = cv2.adaptiveThreshold(frame_diff, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                       cv2.THRESH_BINARY, block_size, c_constant)
-
-                    # Calculate the score for this thresholded image
-                    # For simplicity, let's use the number of white pixels as a score
-                    score = np.sum(thresh_img == 255)
-                    cumulative_score += score
-
-                # Update the best parameters if the current score is better
-                if cumulative_score < best_score:
-                    best_score = cumulative_score
-                    best_block_size = block_size
-                    best_c_constant = c_constant
-                    print(f'Best score: {best_score}, Best block size: {best_block_size}, Best C constant: {best_c_constant}')
-        self.best_block_size = best_block_size
-        self.best_c_constant = best_c_constant
-        return best_block_size, best_c_constant
+        return np.clip(sharpened_image, 0, 255).astype(np.uint8)
 
     def create_event_frames(self):
         if not os.path.exists('raw_data/event_frames'):
@@ -140,22 +109,6 @@ class EventFrameManager():
             frame2 = cv2.imread('raw_data/raw_frames' + f'/gray_frame_{currentframe}.jpg', cv2.IMREAD_GRAYSCALE)
 
             frame_diff = self.compute_frames_difference(frame1, frame2)
-            
-            '''
-            This sample uses Gaussian filtering and the otsu optimization
-            blur = cv2.GaussianBlur(frame_diff,(5,5),0)
-            _, event_frame = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU) # Gausian filtering => otsu optimization
-            '''
-            '''
-            simple otsu optimization
-            _, event_frame = cv2.threshold(frame_diff, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            '''
-            
-            '''
-            adaptive thresholding using optimized parameters
-            event_frame = cv2.adaptiveThreshold(frame_diff, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
-                                                self.best_block_size, self.best_c_constant)
-            '''
 
             # Normalize the frame difference to span the full range of grayscale
             event_frame = cv2.normalize(frame_diff, None, 0, 255, cv2.NORM_MINMAX)
