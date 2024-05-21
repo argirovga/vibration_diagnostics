@@ -1,13 +1,12 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from frame_shifting import frame_shifting_control_algorithm as fsca
 
 class VibrationAnalyzer:
     def __init__(self, frames_directory, video_path):
         self.frames_directory = frames_directory
         self.video_path = video_path
-        self.analyzer = fsca.PatternMatching(frames_directory)
+        self.analyzer = fsca.FrameShiftAnalyzer(frames_directory)
         self.frame_rate = self.get_frame_rate()
 
     def extract_shifts(self):
