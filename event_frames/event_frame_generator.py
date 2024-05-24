@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import pywt
+from scipy.signal import deconvolve
 
 class EventFrameManager():
     def __init__(self, _file_path: str) -> None:
@@ -80,13 +81,35 @@ class EventFrameManager():
 
     def compute_frames_difference(self, prev_frame, next_frame):
         return cv2.absdiff(prev_frame, next_frame)
+    
+    def psf_gaussian(self, size, sigma):
+        """ Create a Gaussian PSF (point spread function). """
+        k = cv2.getGaussianKernel(size, sigma)
+        psf = np.outer(k, k)
+        return psf
 
-    def edge_aware_sharpen(image, sigma_s=5, sigma_r=0.1, strength=1.2):
-        base_layer = cv2.bilateralFilter(image, d=9, sigmaColor=sigma_r*255, sigmaSpace=sigma_s)
-        detail_layer = image - base_layer
-        enhanced_detail = detail_layer * strength
-        sharpened_image = base_layer + enhanced_detail
+    def deconvolve_2d(self, image, psf, iterations=10):
+        """ Deconvolve the image using the Wiener deconvolution approach. """
+        image_ft = np.fft.fft2(image)
+        psf_ft = np.fft.fft2(psf, s=image.shape)
+        psf_ft_conj = np.conj(psf_ft)
+        psf_ft_abs2 = np.abs(psf_ft) ** 2
+        
+        wiener_filter = psf_ft_conj / (psf_ft_abs2 + 0.01)
+        deconvolved_ft = image_ft * wiener_filter
+        deconvolved = np.fft.ifft2(deconvolved_ft)
+        deconvolved = np.abs(deconvolved)
+        
+        return deconvolved
 
+    def edge_aware_sharpen(self, image, psf_size=5, sigma=1.0):
+        """ Perform edge-aware sharpening using deconvolution. """
+        # Create a Gaussian PSF
+        psf = self.psf_gaussian(psf_size, sigma)
+        
+        # Perform deconvolution
+        sharpened_image = self.deconvolve_2d(image, psf)
+        
         return np.clip(sharpened_image, 0, 255).astype(np.uint8)
 
     def create_event_frames(self):
@@ -112,9 +135,8 @@ class EventFrameManager():
 
             # Normalize the frame difference to span the full range of grayscale
             event_frame = cv2.normalize(frame_diff, None, 0, 255, cv2.NORM_MINMAX)
-
+            event_frame = self.edge_aware_sharpen(event_frame)
             self.event_frames.append(event_frame)
-
             name = 'raw_data/event_frames/event_frame_' + str(currentframe - 1) + '.jpg'
             try:
                 cv2.imwrite(name, event_frame)

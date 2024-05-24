@@ -3,6 +3,8 @@ import numpy as np
 from event_frames.event_frame_generator import EventFrameManager
 from .event_filter_generator import EventFilter
 
+import time
+
 class GeneticAlgorithmCreator:
     def __init__(self, ef_manager: EventFrameManager, filter_order: int, num_generations: int, num_parents_mating: int, sol_per_pop: int,
                  init_range_low: float, init_range_high: float, mutation_percent_genes: float) -> None:
@@ -19,14 +21,9 @@ class GeneticAlgorithmCreator:
         ef = EventFilter(self.ef_manager, self.filter_order, solution[:self.filter_order+1], solution[self.filter_order+1:])
         ef.generate_filtered_ef_frames()
         
-        peak_intensities_sum = np.sum([np.max(frame) for frame in ef.filtered_event_frames])
-
-        if peak_intensities_sum == 0:
-            return np.inf  # Return infinity to penalize zero-sum solutions
+        peak_intensities_sum_fitness = np.sum([np.max(frame) for frame in ef.filtered_event_frames])
         
-
-        fitness = 1.0 / peak_intensities_sum
-        return fitness
+        return peak_intensities_sum_fitness
 
 
     def create_run_instance(self, output_dir: str = None):
@@ -39,11 +36,14 @@ class GeneticAlgorithmCreator:
                                init_range_low=self.init_range_low,
                                init_range_high=self.init_range_high,
                                mutation_percent_genes=self.mutation_percent_genes)
+        start_time = time.time()
         ga_instance.run()
-
+        convergence_time = round(time.time() - start_time, 2)
         solution, solution_fitness, _ = ga_instance.best_solution()
         print("Optimal Coefficients: ", solution)
         print("Fitness Value: ", solution_fitness)
+        print("Convergence time in sec.: ", convergence_time)
+
         
         ef = EventFilter(self.ef_manager, self.filter_order, solution[:self.filter_order+1], solution[self.filter_order+1:])
         ef.generate_filtered_ef_frames(save_frames=True, output_dir=output_dir)
