@@ -21,7 +21,7 @@ class VideoPlayerApp(QMainWindow):
         super(VideoPlayerApp, self).__init__()
 
         self.setWindowTitle("VibroDiagnostic")
-        self.setGeometry(100, 100, 800, 1200)  # Adjusted the height for better visibility of all parts
+        self.setGeometry(100, 100, 800, 1200)  
 
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
@@ -259,7 +259,37 @@ class VideoPlayerApp(QMainWindow):
         self.label_status.setText("Error: " + self.media_player.errorString())
 
     def save_results(self):
+        save_directory = QFileDialog.getExistingDirectory(self, "Select Directory to Save Results")
+        if not save_directory:
+            return  
+
+        self.save_result_video(save_directory)
+
+        self.save_graphs(save_directory)
+
         print("Results saved!")
+
+    def save_result_video(self, save_directory):
+        result_video_path = os.path.join(save_directory, "result_video.mp4")
+        height, width = self.vibration_frames[0].shape
+
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(result_video_path, fourcc, 24.0, (width, height))
+
+        for frame in self.vibration_frames:
+            color_frame = cv2.applyColorMap(frame, cv2.COLORMAP_HOT)
+            out.write(color_frame)
+
+        out.release()
+
+    def save_graphs(self, save_directory):
+        graph1_path = os.path.join(save_directory, "x_axis_graph.png")
+        graph2_path = os.path.join(save_directory, "y_axis_graph.png")
+
+        if os.path.exists("x_axis_graph.png"):
+            os.rename("x_axis_graph.png", graph1_path)
+        if os.path.exists("y_axis_graph.png"):
+            os.rename("y_axis_graph.png", graph2_path)
 
     def update_frame(self):
         if self.frame_idx >= len(self.vibration_data):
